@@ -74,15 +74,15 @@ export default function ProductCard({ product, onDelete, onDonate }: ProductCard
       </div>
 
       <div className="flex gap-2">
-        {daysLeft <= 0 && (
-          <button
-            onClick={() => onDonate(product)}
-            className="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors"
-          >
-            <Gift size={16} />
-            Donate
-          </button>
-        )}
+     {(daysLeft <= 2 && daysLeft > 0) || daysLeft <= 0 ? (
+  <button
+    onClick={() => onDonate(product)}
+    className="flex-1 bg-green-600 hover:bg-green-700..."
+  >
+    <Gift size={16} />
+    Donate
+  </button>
+) : null}
         <button
           onClick={() => onDelete(product.id)}
           className={`${daysLeft <= 0 ? 'flex-1' : 'w-full'} bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors`}
