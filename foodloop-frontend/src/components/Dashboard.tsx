@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Truck, MapPin, Phone } from 'lucide-react';
 import { 
   Calculator, Check, Plus, AlertCircle, 
   TrendingDown, Loader, Gift, Package, 
@@ -11,10 +12,10 @@ import ProductForm from './ProductForm';
 import DonationModal from './DonationModal';
 
 export default function Dashboard() {
-  const [donations, setDonations] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'products' | 'donations' | 'analytics'>('products');
   const [products, setProducts] = useState<Product[]>([]);
   const [dashboard, setDashboard] = useState<DashboardType | null>(null);
+  const [donations, setDonations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [calculatingDiscounts, setCalculatingDiscounts] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -28,30 +29,29 @@ export default function Dashboard() {
   }, []);
 
   const fetchAllData = async () => {
-  try {
-    setLoading(true);
-    const [productsRes, dashboardRes, donationsRes] = await Promise.all([
-      productAPI.getAll(),
-      analyticsAPI.getDashboard(),
-      donationAPI.getHistory(), // Connect to your backend route
-    ]);
-    
-    const productsWithDates = productsRes.data.data.map((p: any) => ({
-      ...p,
-      expiryDate: new Date(p.expiryDate),
-    }));
-    
-  setProducts(productsWithDates);
-    setDashboard(dashboardRes.data.data);
-    setDonations(donationsRes.data.data || []); // Save history to state
-    setErrorMessage('');
-  } catch (error) {
-    setErrorMessage('Failed to load project data.');
-  } finally {
-    setLoading(false);
-  }
-};
-  
+    try {
+      setLoading(true);
+      const [productsRes, dashboardRes] = await Promise.all([
+        productAPI.getAll(),
+        analyticsAPI.getDashboard(),
+      ]);
+      
+      const productsWithDates = productsRes.data.data.map((p: any) => ({
+        ...p,
+        expiryDate: new Date(p.expiryDate),
+      }));
+      
+      setProducts(productsWithDates);
+      setDashboard(dashboardRes.data.data);
+      setErrorMessage('');
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      setErrorMessage('Failed to load data. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleAddProduct = async (productData: any) => {
     try {
       await productAPI.add(productData);
@@ -230,61 +230,40 @@ export default function Dashboard() {
 
         {/* --- TAB 2: DONATIONS VIEW --- */}
         {activeTab === 'donations' && (
-  <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
-    {/* Section 1: Partner Food Banks (Directory) */}
-    <div className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="bg-green-100 p-2 rounded-xl text-green-600"><Truck size={24} /></div>
-        <h2 className="text-2xl font-black text-gray-800">Partner Food Banks</h2>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* We use the SAMPLE_FOOD_BANKS data here */}
-        {[
-          { name: 'Food Bank India', location: 'Mumbai, MH', dist: '3 km' },
-          { name: 'Hope Society', location: 'Mumbai, MH', dist: '5 km' },
-          { name: 'Food for All NGO', location: 'Mumbai, MH', dist: '8 km' }
-        ].map((bank, i) => (
-          <div key={i} className="p-5 bg-gray-50 rounded-3xl border border-gray-100">
-            <p className="font-black text-gray-800">{bank.name}</p>
-            <p className="text-[10px] font-bold text-gray-400 uppercase mt-1">{bank.dist} • {bank.location}</p>
-            <div className="mt-4 flex gap-2">
-              <span className="bg-white px-3 py-1 rounded-full text-[10px] font-black text-green-600 border border-green-100">ACTIVE</span>
+          <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
+            <div className="bg-white p-10 rounded-[45px] shadow-sm border border-gray-100">
+              <h2 className="text-2xl font-black mb-8 flex items-center gap-3"><Truck className="text-[#2ecc71]" /> Available Food Banks</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {[
+                  { name: 'Food Bank India', dist: '3.2 km', cap: '50 kg/day', contact: '+91 98765-43210' },
+                  { name: 'Hope Society', dist: '5.1 km', cap: '120 kg/day', contact: '+91 98765-43211' },
+                  { name: 'Food for All NGO', dist: '8.4 km', cap: '80 kg/day', contact: '+91 98765-43212' }
+                ].map((bank, i) => (
+                  <div key={i} className="p-6 bg-gray-50 rounded-[35px] border-2 border-transparent hover:border-[#2ecc71] transition-all">
+                    <h3 className="text-lg font-black text-gray-800 mb-4">{bank.name}</h3>
+                    <div className="space-y-2 text-xs font-bold text-gray-500 uppercase">
+                      <div className="flex items-center gap-2"><MapPin size={14} className="text-[#2ecc71]"/> {bank.dist}</div>
+                      <div className="flex items-center gap-2"><Package size={14} className="text-blue-400"/> {bank.cap}</div>
+                      <div className="flex items-center gap-2"><Phone size={14} className="text-purple-400"/> {bank.contact}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="bg-white p-10 rounded-[45px] shadow-sm border border-gray-100">
+              <h2 className="text-2xl font-black mb-6 flex items-center gap-3"><Gift className="text-purple-500" /> Donation History</h2>
+              {donations.length > 0 ? (
+                donations.map(d => (
+                  <div key={d.id} className="p-4 bg-gray-50 rounded-2xl mb-2 flex justify-between items-center font-bold text-gray-700">
+                    <span>{d.productName}</span>
+                    <span className="text-purple-600 text-[10px] uppercase">Donated {d.quantity} Units</span>
+                  </div>
+                ))
+              ) : <p className="text-center py-10 text-gray-400 font-bold italic">No history found.</p>}
             </div>
           </div>
-        ))}
-      </div>
-    </div>
+        )}
 
-    {/* Section 2: Donation History */}
-    <div className="bg-white p-8 rounded-[40px] shadow-sm border border-gray-100">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="bg-purple-100 p-2 rounded-xl text-purple-600"><Gift size={24} /></div>
-        <h2 className="text-2xl font-black text-gray-800">Recent Donations</h2>
-      </div>
-
-      {donations.length > 0 ? (
-        <div className="space-y-3">
-          {donations.map((d) => (
-            <div key={d.id} className="p-5 bg-gray-50 rounded-3xl flex justify-between items-center group hover:bg-white hover:shadow-md transition-all border border-transparent hover:border-gray-100">
-              <div>
-                <p className="font-black text-gray-800">{d.productName}</p>
-                <p className="text-[10px] font-bold text-gray-400 uppercase">{new Date(d.createdAt).toLocaleDateString()} • {d.foodBankName}</p>
-              </div>
-              <div className="text-right">
-                <span className="bg-purple-100 text-purple-600 px-4 py-2 rounded-full font-black text-xs">+{d.quantity} UNITS</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-16 bg-gray-50 rounded-[30px] border-2 border-dashed border-gray-200">
-          <p className="text-gray-400 font-bold italic">No donations recorded yet. Start by clicking 'Donate' in Inventory.</p>
-        </div>
-      )}
-    </div>
-  </div>
-)}
         {/* --- TAB 3: ANALYTICS VIEW (Manager Dashboard) --- */}
         {activeTab === 'analytics' && dashboard && (
           <div className="space-y-8 animate-in zoom-in duration-500">
@@ -352,7 +331,6 @@ export default function Dashboard() {
           </div>
         )}
       </div>
-
  {selectedProduct && (
   <DonationModal 
     product={selectedProduct} 
@@ -364,4 +342,6 @@ export default function Dashboard() {
   />
 )}
 
-
+    </div>
+  );
+} 
