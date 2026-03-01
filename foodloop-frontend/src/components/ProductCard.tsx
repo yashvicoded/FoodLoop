@@ -45,9 +45,12 @@ export default function ProductCard({ product, onDelete, onDonate }: ProductCard
 
       <div className="mt-5 flex gap-2">
         {daysLeft <= 2 && (
-             <button onClick={() => onDonate(product)} className="flex-1 bg-white border border-gray-200 text-gray-700 py-2 rounded-lg font-bold hover:bg-gray-50 transition-colors text-sm">
-                Donate
-             </button>
+         <button 
+            onClick={() => onDonate(product)} 
+             className="flex-1 bg-white border-2 border-gray-100 text-gray-800 py-3 rounded-2xl font-bold hover:bg-gray-50 transition-all"
+        >
+         Donate
+        </button>
         )}
         <button 
           onClick={() => onDelete(product.id)} 
@@ -58,4 +61,5 @@ export default function ProductCard({ product, onDelete, onDonate }: ProductCard
       </div>
     </div>
   );
+
 }
