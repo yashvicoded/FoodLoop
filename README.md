@@ -1,14 +1,14 @@
 ## FoodLoop: AI-Powered Food Waste Reduction ♻️
 
-**FoodLoop** is an AI-powered system designed to reduce food waste in retail environments. This project was developed as part of a February 2026 hackathon.
+**FoodLoop** is an AI-powered retail ecosystem that prevents food
+waste through real-time detection and automated redistribution.
 
 ### 📂 Project Structure
 
 This repository is organized as a monorepo:
 
 * **`foodloop-frontend/`**: The React/Vite web application built with Tailwind CSS.
-* **`foodloop-backend/`**: The server-side logic and API, integrating with Firebase and Supabase.
-
+* **`foodloop-backend/`**: The server-side logic and API, integrating with Firebase.
 ---
 
 ### 🚀 Getting Started
