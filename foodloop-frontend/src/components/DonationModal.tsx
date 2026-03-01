@@ -17,7 +17,7 @@ const SAMPLE_FOOD_BANKS: FoodBank[] = [
     distance: 3,
     capacity: '50 kg/day',
     contact: '+91-9876543210',
-    location: 'Mumbai, MH',
+    location: 'Anand, GUJ',
   },
   {
     id: '2',
@@ -25,7 +25,7 @@ const SAMPLE_FOOD_BANKS: FoodBank[] = [
     distance: 5,
     capacity: '100 kg/day',
     contact: '+91-9876543211',
-    location: 'Mumbai, MH',
+    location: 'Nadiad, GUJ',
   },
   {
     id: '3',
@@ -33,13 +33,13 @@ const SAMPLE_FOOD_BANKS: FoodBank[] = [
     distance: 8,
     capacity: '75 kg/day',
     contact: '+91-9876543212',
-    location: 'Mumbai, MH',
+    location: 'Vadodara, GUJ',
   },
 ];
 
 export default function DonationModal({ product, onClose, onSuccess }: DonationModalProps) {
-  const safeQuantity = product.quantity || 1;
-  const safePrice = product.originalPrice || 0;
+  const initialQuantity = product?.quantity || 1;
+  const unitPrice = product?.originalPrice || 0;
   const [foodBanks, setFoodBanks] = useState<FoodBank[]>(SAMPLE_FOOD_BANKS);
   const [quantity, setQuantity] = useState(product.quantity);
   const [selectedFoodBank, setSelectedFoodBank] = useState<FoodBank | null>(null);
@@ -150,3 +150,4 @@ export default function DonationModal({ product, onClose, onSuccess }: DonationM
     </div>
   );
 }
+
