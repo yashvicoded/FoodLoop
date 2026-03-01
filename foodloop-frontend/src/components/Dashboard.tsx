@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Truck, MapPin, Phone } from 'lucide-react';
 import { 
   Calculator, Check, Plus, AlertCircle, 
   TrendingDown, Loader, Gift, Package, 
@@ -14,6 +15,7 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<'products' | 'donations' | 'analytics'>('products');
   const [products, setProducts] = useState<Product[]>([]);
   const [dashboard, setDashboard] = useState<DashboardType | null>(null);
+  const [donations, setDonations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [calculatingDiscounts, setCalculatingDiscounts] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -228,13 +230,37 @@ export default function Dashboard() {
 
         {/* --- TAB 2: DONATIONS VIEW --- */}
         {activeTab === 'donations' && (
-          <div className="bg-white p-12 rounded-[40px] shadow-sm border border-gray-100 animate-in slide-in-from-bottom-4">
-             <div className="text-center max-w-md mx-auto">
-                <Gift className="mx-auto h-16 w-16 text-purple-400 mb-4" />
-                <h2 className="text-3xl font-black text-gray-800">Donation History</h2>
-                <p className="text-gray-500 mt-2">View items redirected to community food banks to prevent waste.</p>
-                <div className="mt-8 p-6 bg-gray-50 rounded-2xl italic text-gray-400">No donations recorded this cycle.</div>
-             </div>
+          <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
+            <div className="bg-white p-10 rounded-[45px] shadow-sm border border-gray-100">
+              <h2 className="text-2xl font-black mb-8 flex items-center gap-3"><Truck className="text-[#2ecc71]" /> Available Food Banks</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {[
+                  { name: 'Food Bank India', dist: '3.2 km', cap: '50 kg/day', contact: '+91 98765-43210' },
+                  { name: 'Hope Society', dist: '5.1 km', cap: '120 kg/day', contact: '+91 98765-43211' },
+                  { name: 'Food for All NGO', dist: '8.4 km', cap: '80 kg/day', contact: '+91 98765-43212' }
+                ].map((bank, i) => (
+                  <div key={i} className="p-6 bg-gray-50 rounded-[35px] border-2 border-transparent hover:border-[#2ecc71] transition-all">
+                    <h3 className="text-lg font-black text-gray-800 mb-4">{bank.name}</h3>
+                    <div className="space-y-2 text-xs font-bold text-gray-500 uppercase">
+                      <div className="flex items-center gap-2"><MapPin size={14} className="text-[#2ecc71]"/> {bank.dist}</div>
+                      <div className="flex items-center gap-2"><Package size={14} className="text-blue-400"/> {bank.cap}</div>
+                      <div className="flex items-center gap-2"><Phone size={14} className="text-purple-400"/> {bank.contact}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="bg-white p-10 rounded-[45px] shadow-sm border border-gray-100">
+              <h2 className="text-2xl font-black mb-6 flex items-center gap-3"><Gift className="text-purple-500" /> Donation History</h2>
+              {donations.length > 0 ? (
+                donations.map(d => (
+                  <div key={d.id} className="p-4 bg-gray-50 rounded-2xl mb-2 flex justify-between items-center font-bold text-gray-700">
+                    <span>{d.productName}</span>
+                    <span className="text-purple-600 text-[10px] uppercase">Donated {d.quantity} Units</span>
+                  </div>
+                ))
+              ) : <p className="text-center py-10 text-gray-400 font-bold italic">No history found.</p>}
+            </div>
           </div>
         )}
 
@@ -305,8 +331,17 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+ {selectedProduct && (
+  <DonationModal 
+    product={selectedProduct} 
+    onClose={() => {
+      console.log("Closing Modal");
+      setSelectedProduct(null);
+    }} 
+    onSuccess={handleDonationSuccess} 
+  />
+)}
 
-      {selectedProduct && <DonationModal product={selectedProduct} onClose={() => setSelectedProduct(null)} onSuccess={handleDonationSuccess} />}
     </div>
   );
-}
+} 
