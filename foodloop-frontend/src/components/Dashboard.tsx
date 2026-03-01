@@ -339,9 +339,14 @@ export default function Dashboard() {
         )}
       </div>
 
-      {selectedProduct && <DonationModal product={selectedProduct} onClose={() => setSelectedProduct(null)} onSuccess={handleDonationSuccess} />}
-    </div>
-  );
-
-}
+ {selectedProduct && (
+  <DonationModal 
+    product={selectedProduct} 
+    onClose={() => {
+      console.log("Closing Modal");
+      setSelectedProduct(null);
+    }} 
+    onSuccess={handleDonationSuccess} 
+  />
+)}
 
