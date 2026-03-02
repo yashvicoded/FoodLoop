@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { X, Truck, MapPin, Package, Loader } from 'lucide-react';
 import { Product, FoodBank } from '../types';
 import { donationAPI } from '../lib/api';
@@ -67,6 +67,7 @@ export default function DonationModal({ product, onClose, onSuccess }: DonationM
         productId: product.id,
         productName: product.name,
         foodBankId: selectedFoodBank.id,
+        foodBankName: selectedFoodBank.name,
         quantity,
         donatedValue: unitPrice * quantity,
       });

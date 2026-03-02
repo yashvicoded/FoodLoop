@@ -58,6 +58,7 @@ export interface Dashboard {
     thisWeek: number;
     thisWeekValue: number;
     total: number;
+    totalQuantity: number;
   };
   revenue: {
     recovered: number;

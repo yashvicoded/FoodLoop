@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -16,23 +16,4 @@ body {
 }
 ::-webkit-scrollbar-thumb {
   @apply bg-green-200 rounded-full hover:bg-green-300;
-=======
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-body {
-  @apply bg-gray-50 text-gray-900 antialiased;
-}
-
-/* Custom scrollbar for a cleaner look */
-::-webkit-scrollbar {
-  width: 8px;
-}
-::-webkit-scrollbar-track {
-  @apply bg-gray-100;
-}
-::-webkit-scrollbar-thumb {
-  @apply bg-green-200 rounded-full hover:bg-green-300;
->>>>>>> 918d2aea7b9c7a7b74d964347dd8ea2859df1516
 }

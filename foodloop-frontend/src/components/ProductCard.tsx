@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trash2, Calendar, Tag, Clock } from 'lucide-react';
+import { Trash2, Calendar, Tag, Clock, Package } from 'lucide-react';
 import { Product } from '../types';
 
 interface ProductCardProps {
@@ -19,7 +19,10 @@ export default function ProductCard({ product, onDelete, onDonate }: ProductCard
   };
 
   const styles = getStyles();
-  const hasDiscount = product.isDiscounted && product.currentPrice < product.originalPrice;
+  const origPrice = Number(product.originalPrice) || 0;
+  const curPrice = Number(product.currentPrice) || origPrice;
+  const qty = Number(product.quantity) || 1;
+  const hasDiscount = product.isDiscounted && curPrice < origPrice;
 
   return (
     <div className={`${styles.bg} ${styles.border} border-2 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col h-full`}>
@@ -38,11 +41,14 @@ export default function ProductCard({ product, onDelete, onDonate }: ProductCard
           <Clock size={16} /> <span>{daysLeft} days left</span>
         </div>
         <div className="flex items-center gap-2 text-gray-600 text-sm font-semibold">
+          <Package size={16} /> <span>{qty} unit{qty !== 1 ? 's' : ''}</span>
+        </div>
+        <div className="flex items-center gap-2 text-gray-600 text-sm font-semibold">
           <Tag size={16} />
           {hasDiscount ? (
             <span>
-              <span className="line-through text-gray-400 mr-1">₹{product.originalPrice.toFixed(2)}</span>
-              <span className="text-green-700 font-bold">₹{product.currentPrice.toFixed(2)}</span>
+              <span className="line-through text-gray-400 mr-1">₹{origPrice.toFixed(2)}</span>
+              <span className="text-green-700 font-bold">₹{curPrice.toFixed(2)}</span>
               {product.discountPercent && (
                 <span className="ml-2 text-xs font-black text-green-600 bg-green-100 px-2 py-0.5 rounded-full">
                   -{product.discountPercent}%
@@ -50,13 +56,13 @@ export default function ProductCard({ product, onDelete, onDonate }: ProductCard
               )}
             </span>
           ) : (
-            <span>₹{product.originalPrice.toFixed(2)}</span>
+            <span>₹{origPrice.toFixed(2)}</span>
           )}
         </div>
       </div>
 
       <div className="mt-5 flex gap-2">
-        {daysLeft <= 2 && (
+        {daysLeft <= 4 && (
           <button
             onClick={() => onDonate(product)}
             className="flex-1 bg-white border-2 border-gray-100 text-gray-800 py-3 rounded-2xl font-bold hover:bg-gray-50 transition-all text-sm"
