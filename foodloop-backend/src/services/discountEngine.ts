@@ -34,25 +34,35 @@ export class DiscountEngine {
   };
 
   static calculateDaysToExpiry(expiryDate: any): number {
-  try {
-    const now = new Date();
-    // Force the input into a Date object, even if it's a Firebase Timestamp or String
-    const expiry = expiryDate instanceof Date ? expiryDate : new Date(expiryDate?.toDate?.() || expiryDate);
-    
-    if (isNaN(expiry.getTime())) return 999; // Fallback for bad data
-    
-    const diffTime = expiry.getTime() - now.getTime();
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  } catch (e) {
-    return 999; 
+    try {
+      const now = new Date();
+      // Force the input into a Date object, even if it's a Firebase Timestamp or String
+      const expiry = expiryDate instanceof Date ? expiryDate : new Date(expiryDate?.toDate?.() || expiryDate);
+
+      if (isNaN(expiry.getTime())) return 999; // Fallback for bad data
+
+      const diffTime = expiry.getTime() - now.getTime();
+      return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    } catch (e) {
+      return 999;
+    }
   }
-}
 
   static calculateDiscount(product: Product): DiscountResult {
     const daysLeft = this.calculateDaysToExpiry(product.expiryDate);
-    let rule = this.DISCOUNT_RULES.find(r => daysLeft <= r.daysToExpiry);
-    
-    if (!rule) {
+
+    let discountPercent = 0;
+    if (daysLeft <= 0) {
+      discountPercent = 75;
+    } else if (daysLeft >= 1 && daysLeft <= 2) {
+      discountPercent = 50;
+    } else if (daysLeft >= 3 && daysLeft <= 5) {
+      discountPercent = 25;
+    } else {
+      discountPercent = 0;
+    }
+
+    if (discountPercent === 0) {
       return {
         discountPercent: 0,
         finalPrice: product.originalPrice,
@@ -61,21 +71,18 @@ export class DiscountEngine {
       };
     }
 
-    const categoryMultiplier = this.CATEGORY_MULTIPLIERS[product.category] || 1.0;
-    let finalDiscount = rule.discountPercent * categoryMultiplier;
-    finalDiscount = Math.min(finalDiscount, 95);
+    let finalPrice = product.originalPrice * (1 - discountPercent / 100);
 
-    const minPrice = product.originalPrice * 0.1;
-    const finalPrice = Math.max(
-      product.originalPrice * (1 - finalDiscount / 100),
-      minPrice
-    );
+    let priority = 'NORMAL';
+    if (daysLeft <= 0) priority = 'URGENT';
+    else if (daysLeft <= 2) priority = 'WARNING';
+    else if (daysLeft <= 5) priority = 'CAUTION';
 
     return {
-      discountPercent: Math.round(finalDiscount),
+      discountPercent,
       finalPrice: parseFloat(finalPrice.toFixed(2)),
-      priority: rule.priority,
-      reason: `Expiring in ${daysLeft} day${daysLeft !== 1 ? 's' : ''} (${product.category})`,
+      priority,
+      reason: `Expiring in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}`,
     };
   }
 
@@ -88,11 +95,11 @@ export class DiscountEngine {
 
   static sortByPriority(products: (Product & { discount: DiscountResult })[]): typeof products {
     const priorityOrder = { 'URGENT': 0, 'WARNING': 1, 'CAUTION': 2, 'NORMAL': 3 };
-    
+
     return products.sort((a, b) => {
       const priorityA = priorityOrder[a.discount.priority as keyof typeof priorityOrder] || 999;
       const priorityB = priorityOrder[b.discount.priority as keyof typeof priorityOrder] || 999;
-      
+
       if (priorityA !== priorityB) return priorityA - priorityB;
       return a.expiryDate.getTime() - b.expiryDate.getTime();
     });
@@ -108,7 +115,7 @@ export class DiscountEngine {
   }
 
   static estimateWaste(products: Product[]): number {
-    const urgentProducts = products.filter(p => 
+    const urgentProducts = products.filter(p =>
       this.calculateDaysToExpiry(p.expiryDate) <= 2
     );
     return urgentProducts.reduce((sum, p) => sum + p.originalPrice * p.quantity, 0);

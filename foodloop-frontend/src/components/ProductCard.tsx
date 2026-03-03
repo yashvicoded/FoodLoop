@@ -9,9 +9,25 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product, onDelete, onDonate }: ProductCardProps) {
-  const diffTime = new Date(product.expiryDate).getTime() - new Date().getTime();
+  // THE FIX: We must handle three cases: Firebase Timestamp, String, or Date Object
+  const getSafeDate = (dateVal: any) => {
+    if (!dateVal) return new Date();
+    // Case 1: Firebase Timestamp object
+    if (typeof dateVal.toDate === 'function') return dateVal.toDate();
+    // Case 2: String or Number
+    return new Date(dateVal);
+  };
+
+  const expiryDateObj = getSafeDate(product.expiryDate);
+  const diffTime = expiryDateObj.getTime() - new Date().getTime();
   const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
+  // Use this for your UI display below
+  const formattedDate = expiryDateObj.toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric'
+  });
   const getStyles = () => {
     if (daysLeft <= 2) return { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', label: 'Urgent' };
     if (daysLeft <= 4) return { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-700', label: 'Warning' };
@@ -35,8 +51,9 @@ export default function ProductCard({ product, onDelete, onDonate }: ProductCard
 
       <div className="space-y-2 flex-grow">
         <div className="flex items-center gap-2 text-gray-600 text-sm">
-          <Calendar size={16} /> <span>Expiry: {new Date(product.expiryDate).toLocaleDateString()}</span>
-        </div>
+  <Calendar size={16} /> 
+  <span>Expiry: {expiryDateObj.toLocaleDateString()}</span>
+</div>
         <div className="flex items-center gap-2 text-gray-800 font-bold">
           <Clock size={16} /> <span>{daysLeft} days left</span>
         </div>

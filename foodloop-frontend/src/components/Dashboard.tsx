@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Truck, MapPin, Phone } from 'lucide-react';
-import { 
-  Calculator, Check, Plus, AlertCircle, 
-  TrendingDown, Loader, Gift, Package, 
-  ShieldCheck, LayoutDashboard 
+import {
+  Calculator, Check, Plus, AlertCircle,
+  TrendingDown, Loader, Gift, Package,
+  ShieldCheck, LayoutDashboard
 } from 'lucide-react';
 import { productAPI, discountAPI, analyticsAPI, donationAPI } from '../lib/api';
 import { Product, Dashboard as DashboardType } from '../types';
@@ -35,17 +35,31 @@ export default function Dashboard() {
         productAPI.getAll(),
         analyticsAPI.getDashboard(),
       ]);
-      
-      const productsWithDates = productsRes.data.data.map((p: any) => ({
-        ...p,
-        expiryDate: new Date(p.expiryDate),
-        originalPrice: Number(p.originalPrice) || 0,
-        currentPrice: Number(p.currentPrice) || Number(p.originalPrice) || 0,
-        isDiscounted: Boolean(p.isDiscounted),
-        quantity: Number(p.quantity) || 1,
-        discountPercent: p.discountPercent ? Number(p.discountPercent) : undefined,
-      }));
-      
+
+      // Convert Firestore Timestamps to JS Dates for products
+      const productsWithDates = productsRes.data.data.map((p: any) => {
+        // THE FIX: Logic belongs inside { } with a 'return'
+        let dateObj;
+
+        // Handle Firebase Timestamps (_seconds) or standard date strings
+        if (p.expiryDate && typeof p.expiryDate === 'object' && p.expiryDate._seconds) {
+          dateObj = new Date(p.expiryDate._seconds * 1000);
+        } else {
+          dateObj = new Date(p.expiryDate);
+        }
+
+        // Explicit return of the object
+        return {
+          ...p,
+          expiryDate: dateObj,
+          originalPrice: Number(p.originalPrice) || 0,
+          currentPrice: Number(p.currentPrice) || Number(p.originalPrice) || 0,
+          isDiscounted: Boolean(p.isDiscounted),
+          quantity: Number(p.quantity) || 1,
+          discountPercent: p.discountPercent ? Number(p.discountPercent) : undefined,
+        };
+      }); // Closing the map correctly now
+
       setProducts(productsWithDates);
       setDashboard(dashboardRes.data.data);
 
@@ -79,10 +93,46 @@ export default function Dashboard() {
   const handleCalculateDiscounts = async () => {
     setCalculatingDiscounts(true);
     try {
-      await discountAPI.calculate();
-      setSuccessMessage(`✓ Calculated discounts!`);
+      // Calculate preview in component state only
+      const previewProducts = products.map(product => {
+        const getSafeDate = (dateVal: any) => {
+          if (!dateVal) return new Date();
+          if (typeof dateVal.toDate === 'function') return dateVal.toDate();
+          if (dateVal._seconds) return new Date(dateVal._seconds * 1000);
+          return new Date(dateVal);
+        };
+        const expiry = getSafeDate(product.expiryDate);
+        const today = new Date();
+        expiry.setHours(0, 0, 0, 0);
+        today.setHours(0, 0, 0, 0);
+
+        const diffTime = expiry.getTime() - today.getTime();
+        const daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        let discountPercent = 0;
+        if (daysRemaining <= 0) discountPercent = 75;
+        else if (daysRemaining >= 1 && daysRemaining <= 2) discountPercent = 50;
+        else if (daysRemaining >= 3 && daysRemaining <= 5) discountPercent = 25;
+
+        if (discountPercent > 0) {
+          const discountedPrice = product.originalPrice * (1 - discountPercent / 100);
+          return {
+            ...product,
+            discountPercent,
+            currentPrice: discountedPrice,
+            isDiscounted: true
+          };
+        }
+        return {
+          ...product,
+          discountPercent: 0,
+          currentPrice: product.originalPrice,
+          isDiscounted: false
+        };
+      });
+      setProducts(previewProducts);
+      setSuccessMessage(`✓ Calculated discounts! (Preview applied)`);
       setTimeout(() => setSuccessMessage(''), 3000);
-      fetchAllData();
     } catch (error: any) {
       setErrorMessage('Failed to calculate discounts');
     } finally {
@@ -92,8 +142,19 @@ export default function Dashboard() {
 
   const handleApplyDiscounts = async () => {
     try {
-      const response = await discountAPI.apply();
-      setSuccessMessage(`✓ Applied to ${response.data.appliedCount} products!`);
+      let appliedCount = 0;
+      for (const product of products) {
+        if (product.isDiscounted && product.discountPercent && product.discountPercent > 0) {
+          await productAPI.update(product.id, {
+            currentPrice: product.currentPrice,
+            discountPercent: product.discountPercent,
+            isDiscounted: true,
+            originalPrice: product.originalPrice
+          });
+          appliedCount++;
+        }
+      }
+      setSuccessMessage(`✓ Applied to ${appliedCount} products!`);
       setTimeout(() => setSuccessMessage(''), 3000);
       fetchAllData();
     } catch (error: any) {
@@ -134,7 +195,7 @@ export default function Dashboard() {
   }
 
   return (
-      <div className="min-h-screen bg-[#f8fafc]">
+    <div className="min-h-screen bg-[#f8fafc]">
       {/* 1. BRANDED NAVBAR */}
       <nav className="bg-[#2ecc71] text-white shadow-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
@@ -147,22 +208,22 @@ export default function Dashboard() {
               <p className="text-[10px] opacity-90 uppercase font-bold tracking-widest mt-1">Waste Less, Save More</p>
             </div>
           </div>
-          
+
           {/* TAB SWITCHER */}
           <div className="flex gap-2 bg-green-700/30 p-1 rounded-xl">
-            <button 
+            <button
               onClick={() => setActiveTab('products')}
               className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'products' ? 'bg-white text-[#2ecc71] shadow-sm' : 'hover:bg-green-600'}`}
             >
               Products
             </button>
-            <button 
+            <button
               onClick={() => setActiveTab('donations')}
               className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'donations' ? 'bg-white text-[#2ecc71] shadow-sm' : 'hover:bg-green-600'}`}
             >
               Donations
             </button>
-            <button 
+            <button
               onClick={() => setActiveTab('analytics')}
               className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'analytics' ? 'bg-white text-[#2ecc71] shadow-sm' : 'hover:bg-green-600'}`}
             >
@@ -173,7 +234,7 @@ export default function Dashboard() {
       </nav>
 
       <div className="max-w-7xl mx-auto p-6 space-y-8">
-        
+
         {/* GLOBAL MESSAGES */}
         {errorMessage && <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-xl text-red-700 font-bold animate-in fade-in">{errorMessage}</div>}
         {successMessage && <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded-r-xl text-green-700 font-bold animate-in fade-in">{successMessage}</div>}
@@ -255,9 +316,9 @@ export default function Dashboard() {
                   <div key={i} className="p-6 bg-gray-50 rounded-[35px] border-2 border-transparent hover:border-[#2ecc71] transition-all">
                     <h3 className="text-lg font-black text-gray-800 mb-4">{bank.name}</h3>
                     <div className="space-y-2 text-xs font-bold text-gray-500 uppercase">
-                      <div className="flex items-center gap-2"><MapPin size={14} className="text-[#2ecc71]"/> {bank.dist}</div>
-                      <div className="flex items-center gap-2"><Package size={14} className="text-blue-400"/> {bank.cap}</div>
-                      <div className="flex items-center gap-2"><Phone size={14} className="text-purple-400"/> {bank.contact}</div>
+                      <div className="flex items-center gap-2"><MapPin size={14} className="text-[#2ecc71]" /> {bank.dist}</div>
+                      <div className="flex items-center gap-2"><Package size={14} className="text-blue-400" /> {bank.cap}</div>
+                      <div className="flex items-center gap-2"><Phone size={14} className="text-purple-400" /> {bank.contact}</div>
                     </div>
                   </div>
                 ))}
@@ -294,26 +355,30 @@ export default function Dashboard() {
             </header>
 
             {/* High-Impact Analytics Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
               <div className="bg-white p-6 rounded-3xl border-l-[12px] border-blue-500 shadow-sm flex flex-col justify-center">
-                <p className="text-3xl font-black leading-tight">{dashboard.inventory.total}</p>
+                <p className="text-3xl font-black leading-tight">{dashboard.inventory.total || 0}</p>
                 <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Total Products</p>
               </div>
               <div className="bg-white p-6 rounded-3xl border-l-[12px] border-green-500 shadow-sm flex flex-col justify-center">
-                <p className="text-3xl font-black leading-tight">{dashboard.inventory.discounted}</p>
+                <p className="text-3xl font-black leading-tight">{dashboard.inventory.discounted || 0}</p>
                 <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Items Discounted</p>
               </div>
               <div className="bg-white p-6 rounded-3xl border-l-[12px] border-purple-500 shadow-sm flex flex-col justify-center">
-                <p className="text-3xl font-black leading-tight">{dashboard.donations.thisWeek}</p>
+                <p className="text-3xl font-black leading-tight">{dashboard.donations.donatedThisWeek || 0}</p>
                 <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Donated This Week</p>
               </div>
               <div className="bg-white p-6 rounded-3xl border-l-[12px] border-yellow-500 shadow-sm flex flex-col justify-center">
-                <p className="text-3xl font-black leading-tight">₹{Math.round(dashboard.revenue.recovered)}</p>
-                <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Revenue Recovered</p>
+                <p className="text-3xl font-black leading-tight">₹{Math.round(dashboard.donations.revenueRecovered || 0)}</p>
+                <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Profit Recovered</p>
               </div>
               <div className="bg-white p-6 rounded-3xl border-l-[12px] border-cyan-500 shadow-sm flex flex-col justify-center">
-                <p className="text-3xl font-black leading-tight">{dashboard.donations.totalQuantity || 0} units</p>
+                <p className="text-3xl font-black leading-tight">{dashboard.donations.wastePreventedKg || 0} kg</p>
                 <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Waste Prevented</p>
+              </div>
+              <div className="bg-white p-6 rounded-3xl border-l-[12px] border-emerald-500 shadow-sm flex flex-col justify-center">
+                <p className="text-3xl font-black leading-tight">{dashboard.donations.co2SavedKg || 0} kg</p>
+                <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Carbon Footprint Saved</p>
               </div>
             </div>
 
@@ -352,16 +417,16 @@ export default function Dashboard() {
           </div>
         )}
       </div>
- {selectedProduct && (
-  <DonationModal 
-    product={selectedProduct} 
-    onClose={() => {
-      console.log("Closing Modal");
-      setSelectedProduct(null);
-    }} 
-    onSuccess={handleDonationSuccess} 
-  />
-)}
+      {selectedProduct && (
+        <DonationModal
+          product={selectedProduct}
+          onClose={() => {
+            console.log("Closing Modal");
+            setSelectedProduct(null);
+          }}
+          onSuccess={handleDonationSuccess}
+        />
+      )}
 
     </div>
   );

@@ -20,16 +20,25 @@ export class DonationController {
       // 1. Add to Donation History
       const docRef = await db.collection('donations').add(donation);
 
-      // 2. CRITICAL FIX: Delete the product from the products collection
-      // This is why "Item 2" wasn't disappearing!
+      // 2. Update the product quantity, delete if 0
       if (productId) {
-        await db.collection('products').doc(productId).delete();
+        const productRef = db.collection('products').doc(productId);
+        const productDoc = await productRef.get();
+        if (productDoc.exists) {
+          const currentQuantity = Number(productDoc.data()?.quantity) || 1;
+          const remaining = currentQuantity - Number(quantity);
+          if (remaining > 0) {
+            await productRef.update({ quantity: remaining });
+          } else {
+            await productRef.delete();
+          }
+        }
       }
 
-      res.status(201).json({ 
-        success: true, 
-        id: docRef.id, 
-        message: "Donation recorded and inventory updated" 
+      res.status(201).json({
+        success: true,
+        id: docRef.id,
+        message: "Donation recorded and inventory updated"
       });
     } catch (error: any) {
       res.status(500).json({ success: false, error: error.message });

@@ -54,11 +54,11 @@ export interface Dashboard {
     caution: number;
   };
   donations: {
-    totalValue: number;
-    thisWeek: number;
-    thisWeekValue: number;
+    donatedThisWeek: number;
+    wastePreventedKg: number;
+    co2SavedKg: number;
+    revenueRecovered: number;
     total: number;
-    totalQuantity: number;
   };
   revenue: {
     recovered: number;
