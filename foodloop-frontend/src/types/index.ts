@@ -10,6 +10,12 @@ export interface Product {
   quantity: number;
   createdAt?: Date;
   lastUpdated?: Date;
+  aiInsight?: {
+    riskLevel: 'Urgent' | 'Warning' | 'Fresh';
+    suggestedDiscount: number;
+    predictedLeftover: number;
+    reason: string;
+  };
 }
 
 export interface DiscountSummary {

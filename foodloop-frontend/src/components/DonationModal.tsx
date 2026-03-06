@@ -6,7 +6,7 @@ import { donationAPI } from '../lib/api';
 interface DonationModalProps {
   product: Product;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (data?: any) => void;
 }
 
 // Sample food banks - Replace with API call in production
@@ -72,7 +72,12 @@ export default function DonationModal({ product, onClose, onSuccess }: DonationM
         donatedValue: unitPrice * quantity,
       });
 
-      onSuccess();
+      onSuccess({
+        id: product.id,
+        name: product.name,
+        quantity,
+        foodBankName: selectedFoodBank.name,
+      });
     } catch (err: any) {
       console.error('Error recording donation:', err);
       setError(err.response?.data?.error || 'Failed to record donation');
